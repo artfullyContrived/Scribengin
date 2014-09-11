@@ -1,6 +1,5 @@
 package com.neverwinterdp.scribengin.zookeeper;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,6 +20,7 @@ import com.neverwinterdp.scribengin.utils.ConfigurationCommand;
 import com.neverwinterdp.scribengin.utils.HostPort;
 import com.neverwinterdp.scribengin.utils.Partition;
 import com.neverwinterdp.scribengin.utils.PartitionState;
+import com.neverwinterdp.scribengin.utils.Progress;
 import com.neverwinterdp.scribengin.utils.ScribenginUtils;
 
 public class ZookeeperHelper {
@@ -61,7 +61,8 @@ public class ZookeeperHelper {
       throws Exception {
     String leader = "";
 
-    com.neverwinterdp.scribengin.utils.PartitionState partitionState = getPartionState(topic, partion);
+    com.neverwinterdp.scribengin.utils.PartitionState partitionState =
+        getPartionState(topic, partion);
     int leaderId = partitionState.getLeader();
     byte[] bytes = {};
 
@@ -134,7 +135,7 @@ public class ZookeeperHelper {
   public int writeData(String path, byte[] data) throws Exception {
     //TODO exit if data is not a json obj
 
- //   logger.info("writeData. path: " + path + " data: " + Arrays.toString(data));
+    //   logger.info("writeData. path: " + path + " data: " + Arrays.toString(data));
     if (zkClient.checkExists().forPath(path) == null) {
 
       String created =
@@ -180,6 +181,29 @@ public class ZookeeperHelper {
     return partitionState;
   }
 
+  /**
+  * @param topic
+  * @param partion
+  * @return
+  * @throws Exception
+  */
+  public Progress getProgress(String path)
+      throws Exception {
+    //TODO preconditions
+    try {
+      zkClient.getData().forPath(path);
+    } catch (NoNodeException nne) {
+
+      logger.error(nne.getMessage());
+      return new Progress();
+    }
+    byte[] bytes = zkClient.getData()
+        .forPath(path);
+    Progress progress = ScribenginUtils.toClass(bytes,
+        Progress.class);
+    return progress;
+  }
+
   // where is the info
   // brokers/id and /brokers/topics
   // to be used only when kafka broker info is not stored in default zookeeper
@@ -213,7 +237,8 @@ public class ZookeeperHelper {
 
 
   //write to 
-  public void updateProgress(String path, byte[] data) throws Exception {
-    writeData(path, data);
+  public void updateProgress(String path, Progress progress) throws Exception {
+
+    writeData(path, ScribenginUtils.toJson(progress).getBytes());
   }
 }

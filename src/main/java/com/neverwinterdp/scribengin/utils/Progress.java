@@ -6,6 +6,8 @@ public class Progress {
   private int offset;
   private String timestamp;
 
+  //port, host, topic, partition, instance name
+
   public int getId() {
     return id;
   }

@@ -7,9 +7,6 @@ import org.apache.commons.chain.Filter;
 // | | |
 // filter buffer buffer
 public interface Finalizer extends Filter {
-
   //update necessary system that we are done
   void finalizeit() throws Exception;
-
-
 }
