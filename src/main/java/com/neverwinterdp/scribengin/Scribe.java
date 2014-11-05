@@ -9,18 +9,27 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 /**
- * Main coordinator of all jobs. Similar to hadoop's job tracker.
- * 1. xxxxx Submits jobs to Scribemaster.
- * 2. Locate nodes that can be given jobs
- * 3. ScribeMaster then submits tasks to tasktracker? nodes
- * 4. Also monitors tasktracker? heartbeat, failure 
- * 5. Sends info to xxxxxx about progress
+ * Processes a partition of data(Stream) from a data-flow
+ * The actual worker.  Holds a Reader, Task and Writer, (Source, Task, Sink)
+ * Is started by a StreamCoordinator.
+ * Each individual Scribe only processes data from a single partition(Stream) from a single data-flow.
  * 
  * */
-public class ScribeMaster implements Service {
-  //Start and monitor many Scribe coordinators
+public class Scribe implements Runnable, Service{
+ 
 
-  private Set<DataFlow> dataFlows;
+  private Source source;
+
+  private Task task;
+
+  private Sink sink;
+
+
+   @Override
+  public void run() {
+    // TODO Auto-generated method stub
+    
+  }
 
   @Override
   public ListenableFuture<State> start() {
@@ -28,11 +37,13 @@ public class ScribeMaster implements Service {
     return null;
   }
 
+
   @Override
   public State startAndWait() {
     // TODO Auto-generated method stub
     return null;
   }
+
 
   @Override
   public Service startAsync() {
@@ -40,11 +51,13 @@ public class ScribeMaster implements Service {
     return null;
   }
 
+
   @Override
   public boolean isRunning() {
     // TODO Auto-generated method stub
     return false;
   }
+
 
   @Override
   public State state() {
@@ -52,11 +65,13 @@ public class ScribeMaster implements Service {
     return null;
   }
 
+
   @Override
   public ListenableFuture<State> stop() {
     // TODO Auto-generated method stub
     return null;
   }
+
 
   @Override
   public State stopAndWait() {
@@ -64,35 +79,41 @@ public class ScribeMaster implements Service {
     return null;
   }
 
+
   @Override
   public Service stopAsync() {
     // TODO Auto-generated method stub
     return null;
   }
 
+
   @Override
   public void awaitRunning() {
     // TODO Auto-generated method stub
-
+    
   }
+
 
   @Override
   public void awaitRunning(long timeout, TimeUnit unit) throws TimeoutException {
     // TODO Auto-generated method stub
-
+    
   }
+
 
   @Override
   public void awaitTerminated() {
     // TODO Auto-generated method stub
-
+    
   }
+
 
   @Override
   public void awaitTerminated(long timeout, TimeUnit unit) throws TimeoutException {
     // TODO Auto-generated method stub
-
+    
   }
+
 
   @Override
   public Throwable failureCause() {
@@ -100,9 +121,11 @@ public class ScribeMaster implements Service {
     return null;
   }
 
+
   @Override
   public void addListener(Listener listener, Executor executor) {
     // TODO Auto-generated method stub
-
+    
   }
+
 }
