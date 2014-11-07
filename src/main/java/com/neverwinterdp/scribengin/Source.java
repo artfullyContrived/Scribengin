@@ -2,16 +2,16 @@ package com.neverwinterdp.scribengin;
 
 
 /**
- * A reader of a source. the following source implementations are available
+ * The following source implementations are available
  *  Kafka
  *  Kinesis
  *  JMS
  *  HDFS
  *  S3
  * 
+ * Similar to a storm Spout
  * */
 public interface Source /*extends Iterable<Source>*/{
 
-
-  public void read();
+  public SourceReader getReader() ;
 }

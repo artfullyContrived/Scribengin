@@ -6,4 +6,5 @@ package com.neverwinterdp.scribengin;
 */
 public class Stream {
 
+  public Iterable<Record> records;
 }

@@ -1,7 +1,9 @@
 package com.neverwinterdp.scribengin;
 
 /**
- * Scribes record their progress here as well
+ * Scribes record their progress to a State Service.
+ * 
+ * ScribeMaster and Supervisor nodes are state-less and store all the state in a StateService.
  * 
  * */
 public interface StateService {
