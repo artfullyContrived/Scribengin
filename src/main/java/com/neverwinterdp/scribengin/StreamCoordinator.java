@@ -13,6 +13,8 @@ import com.google.common.util.concurrent.Service;
  * One coordinator is created for each data flow. 
  * The coordinator helps orchestrate which worker(Scribe) 
  * should get what partition(Stream) of the data to process
+ * 
+ * Similar to a storm Spout
  * */
 public class StreamCoordinator implements Service {
 

@@ -9,7 +9,6 @@ package com.neverwinterdp.scribengin;
  *  HDFS
  *  S3
  * 
- * Similar to a storm Spout
  * */
 public interface Source /*extends Iterable<Source>*/{
 
