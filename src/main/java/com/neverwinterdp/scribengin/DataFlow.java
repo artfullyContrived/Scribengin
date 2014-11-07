@@ -18,8 +18,14 @@ package com.neverwinterdp.scribengin;
  */
 public abstract class DataFlow {
  
+  String dataFlowName;
   
   public static void main(String[] args) {
 
+  }
+  
+  //Say which Source, Task and Sink you want to write to.
+  class DataFlowBuilder{
+   
   }
 }
