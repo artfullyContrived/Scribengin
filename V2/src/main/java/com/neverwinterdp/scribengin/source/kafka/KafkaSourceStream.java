@@ -55,7 +55,8 @@ public class KafkaSourceStream implements SourceStream {
   }
 
   private HostPort findLeader(String topic, int partition) {
-    PartitionMetadata returnMetaData = null;
+    logger.info("findLeader. Topic:" + topic + " Partition: " + partition);
+    PartitionMetadata partitionMetaData = null;
     loop: for (HostPort hostPort : sourceStreamDescriptor.getBrokers()) {
       SimpleConsumer consumer = null;
       try {
@@ -70,7 +71,7 @@ public class KafkaSourceStream implements SourceStream {
         for (TopicMetadata item : metaData) {
           for (PartitionMetadata part : item.partitionsMetadata()) {
             if (part.partitionId() == partition) {
-              returnMetaData = part;
+              partitionMetaData = part;
               break loop;
             }
           }
@@ -85,7 +86,7 @@ public class KafkaSourceStream implements SourceStream {
       }
     }
 
-    return new HostPort(returnMetaData.leader().host(), returnMetaData.leader().port());
+    return new HostPort(partitionMetaData.leader().host(), partitionMetaData.leader().port());
   }
 
   public Set<HostPort> getBrokers() {
@@ -102,5 +103,50 @@ public class KafkaSourceStream implements SourceStream {
     return sourceStreamReader;
   }
 
+
+
+  /* (non-Javadoc)
+   * @see java.lang.Object#hashCode()
+   */
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result =
+        prime * result + ((sourceStreamDescriptor == null) ? 0 : sourceStreamDescriptor.hashCode());
+    result = prime * result + ((sourceStreamReader == null) ? 0 : sourceStreamReader.hashCode());
+    return result;
+  }
+
+  /* (non-Javadoc)
+   * @see java.lang.Object#equals(java.lang.Object)
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    KafkaSourceStream other = (KafkaSourceStream) obj;
+    if (sourceStreamDescriptor == null) {
+      if (other.sourceStreamDescriptor != null)
+        return false;
+    } else if (!sourceStreamDescriptor.equals(other.sourceStreamDescriptor))
+      return false;
+    if (sourceStreamReader == null) {
+      if (other.sourceStreamReader != null)
+        return false;
+    } else if (!sourceStreamReader.equals(other.sourceStreamReader))
+      return false;
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "KafkaSourceStream [sourceStreamDescriptor=" + sourceStreamDescriptor
+        + ", sourceStreamReader=" + sourceStreamReader + "]";
+  }
 
 }

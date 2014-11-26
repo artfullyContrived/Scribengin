@@ -2,6 +2,8 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'maven'
 apply plugin: 'jacoco'
+apply plugin:'application'
+mainClassName = "com.neverwinterdp.scribengin.source.kafka.JustATest"
 
 jacoco {
     toolVersion = "0.6.2.201302030002"
@@ -43,9 +45,13 @@ configurations.all {
 }
 
 dependencies {
+  compile 'org.apache.curator:curator-framework:2.6.0'
+  compile 'org.apache.curator:curator-recipes:2.6.0'
+  compile 'org.apache.curator:curator-test:2.6.0'
   compile group: 'com.neverwinterdp', name: 'queuengin', version: '1.0-SNAPSHOT'
   compile group: 'com.neverwinterdp', name: 'commons.hadoop-framework', version: '1.0-SNAPSHOT'
-
+ compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.1'
+  compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.1'
   testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 

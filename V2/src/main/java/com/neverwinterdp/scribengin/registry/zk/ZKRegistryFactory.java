@@ -10,5 +10,4 @@ public class ZKRegistryFactory implements RegistryFactory {
   public Registry create(RegistryConfig config) {
     return new RegistryImpl(config);
   }
-
 }

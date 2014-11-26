@@ -1,18 +1,10 @@
 package com.neverwinterdp.scribengin.source.kafka;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Random;
 import java.util.Set;
-
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
 
 import org.apache.log4j.Logger;
 
@@ -21,8 +13,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.neverwinterdp.scribengin.fixture.KafkaFixture;
-import com.neverwinterdp.scribengin.fixture.ZookeeperFixture;
 import com.neverwinterdp.scribengin.source.Source;
 import com.neverwinterdp.scribengin.source.SourceDescriptor;
 import com.neverwinterdp.scribengin.source.SourceStream;
@@ -31,29 +21,32 @@ import com.neverwinterdp.scribengin.util.HostPort;
 import com.neverwinterdp.scribengin.util.ZookeeperUtils;
 
 // worry about reconnection, get partitions
-public class KafkaSource implements Source {
+public class KafkaSource extends TopicNodeListener implements Source, Closeable {
   //TODO: implement kafka source and assign each kafka partition as a source stream
   //TODO KafkaSourceDescriptor  for topic metadata?
   //Source descriptor defines topic?
 
   private static final Logger logger = Logger.getLogger(KafkaSource.class);
-  private static ZookeeperFixture zookeeperFixture;
-  private static HashSet<KafkaFixture> kafkaBrokers;
-  private static String topic = "scribe";
-  private ZookeeperUtils utils;
+
+  private ZookeeperUtils zkUtils;
   private SourceDescriptor descriptor;
   private Set<SourceStream> sourceStreams;
 
   public KafkaSource(SourceDescriptor descriptor) {
-    super();
+    logger.info("KafkaSource. " + descriptor);
     this.descriptor = descriptor;
-    sourceStreams = Sets.newHashSet();
     initialize();
   }
 
-  //TODO agree if we need to cal this in constructor
   private void initialize() {
-    sourceStreams = Sets.newHashSet(getSourceStreams());
+    logger.info("initialize. ");
+    try {
+      zkUtils = new ZookeeperUtils(descriptor.getLocation());
+      sourceStreams = updateSourceStreamsSet();
+      setAutoUpdate();
+    } catch (Exception e1) {
+      e1.printStackTrace();
+    }
   }
 
   @Override
@@ -74,36 +67,44 @@ public class KafkaSource implements Source {
   @Override
   public SourceStream[] getSourceStreams() {
     logger.info("getSourceStreams. ");
+    sourceStreams = updateSourceStreamsSet();
+    return sourceStreams.toArray(new SourceStream[sourceStreams.size()]);
+  }
+
+  /**
+   * TODO get a better name
+   * @return 
+   */
+  private Set<SourceStream> updateSourceStreamsSet() {
+    logger.info("updateSourceStreamsSet. ");
+    Set<SourceStream> sources = Sets.newHashSet();
+
     //kafka stores partitions as a String not an int
     //one partition, many brokers
-    Multimap<String, HostPort> partitions = null;
-    try {
-      utils = new ZookeeperUtils(descriptor.getLocation());
-    } catch (InterruptedException e1) {
-      e1.printStackTrace();
-    }
-
+    Multimap<Integer, HostPort> partitions = null;
     //get partitions for Topic
     try {
-      partitions = utils.getBrokersForTopic(descriptor.getName());
+      logger.debug("zkUtils is null? " + (zkUtils == null));
+      partitions = zkUtils.getBrokersForTopic(descriptor.getName());
       logger.info("NUMBER " + partitions);
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
     }
     //Create SourceStreams here
     KafkaSourceStreamDescriptor sourceStreamDescriptor;
     KafkaSourceStreamReader sourceStreamReader;
     KafkaSourceStream sourceStream;
 
-    for (Entry<String, Collection<HostPort>> partition : partitions.asMap().entrySet()) {
+    for (Entry<Integer, Collection<HostPort>> partition : partitions.asMap().entrySet()) {
       sourceStreamDescriptor =
           new KafkaSourceStreamDescriptor(descriptor.getName(), partition.getKey(),
               partition.getValue());
       sourceStream = new KafkaSourceStream(sourceStreamDescriptor);
       sourceStreamReader = new KafkaSourceStreamReader(descriptor.getName(), sourceStream);
       sourceStream.setSourceStreamReader(sourceStreamReader);
-      sourceStreams.add(sourceStream);
+      sources.add(sourceStream);
     }
-    return sourceStreams.toArray(new SourceStream[sourceStreams.size()]);
+    return sources;
   }
 
   @Override
@@ -111,72 +112,28 @@ public class KafkaSource implements Source {
     return descriptor;
   }
 
-  public static void main(String[] args) throws IOException, InterruptedException {
-    try {
-      init();
-      createKafkaData(100);
-      SourceDescriptor descriptor = new SourceDescriptor();
-      descriptor.setName(topic);
-      descriptor.setLocation("127.0.0.1:2181");
-      KafkaSource source = new KafkaSource(descriptor);
-
-      Arrays.toString(source.getSourceStreams());
-    } finally {
-      stop();
-
-    }
+  public void setAutoUpdate() throws Exception {
+    logger.info("setAutoUpdate. ");
+    zkUtils.setTopicNodeListener(this);
   }
 
-  private static void stop() throws InterruptedException, IOException {
-    Thread.sleep(1000);
-    zookeeperFixture.stop();
-
-    for (KafkaFixture kafkaFix : kafkaBrokers) {
-      kafkaFix.stop();
-    }
-
+  @Override
+  /**
+   * Whenever the topic node in ZK is changed we update The sourceStreams.
+   * TODO make good equals hash code so that update doesn't create new ones.
+   * */
+  public void update() {
+    sourceStreams = updateSourceStreamsSet();
   }
 
-
-
-  private static void init() throws IOException {
-    zookeeperFixture = new ZookeeperFixture("0.8.1", "127.0.0.1", 2181);
-    zookeeperFixture.start();
-
-    kafkaBrokers = Sets.newHashSet();
-    KafkaFixture kafkaFixture;
-    for (int i = 0; i < 2; i++) {
-      int kafkaPort = 9092;
-      kafkaFixture = new KafkaFixture("0.8.1", "127.0.0.1", kafkaPort + i, "127.0.0.1", 2181);
-      kafkaFixture.start();
-
-      kafkaBrokers.add(kafkaFixture);
-    }
+  @Override
+  public void close() throws IOException {
+    zkUtils.close();
   }
 
-  private static void createKafkaData(int startNum) {
-    Random rnd = new Random();
-    logger.info("createKafkaData. " + startNum);
-    long events = Long.parseLong(startNum + "");
-    Properties props = new Properties();
-    props.put("metadata.broker.list", "127.0.0.1:9092, 127.0.0.1:9093");
-    props.put("num.partitions", Integer.toString(2));
-    props.put("serializer.class", "kafka.serializer.StringEncoder");
-    props.put("partitioner.class", "com.neverwinterdp.scribengin.fixture.SimplePartitioner");
-    props.put("request.required.acks", "1");
-
-    ProducerConfig config = new ProducerConfig(props);
-
-    Producer<String, String> producer = new Producer<String, String>(config);
-
-    for (long nEvents = 0; nEvents < events; nEvents++) {
-      long runtime = new Date().getTime();
-      String ip = "192.168.2." + rnd.nextInt(255);
-      String msg = runtime + ",www.example.com," + ip;
-      KeyedMessage<String, String> data = new KeyedMessage<String, String>(topic, ip, msg);
-      producer.send(data);
-    }
-    producer.close();
+  @Override
+  public String getTopic() {
+    return descriptor.getName();
   }
 }
 

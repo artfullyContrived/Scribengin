@@ -1,16 +1,13 @@
 package com.neverwinterdp.scribengin.util;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Properties;
 
-import org.apache.log4j.Logger;
-
+import com.beust.jcommander.internal.Maps;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.base.Charsets;
 
 public class Utils {
 
@@ -19,48 +16,28 @@ public class Utils {
    */
   private static ObjectReader reader;
   static ObjectMapper mapper = new ObjectMapper();
-  static {
-  }
-  private static final Logger logger = Logger.getLogger(Utils.class);
-
-  public static String getZookeeperServers(Properties props) {
-    String servers = "";
-    for (Object key : props.keySet()) {
-      if (((String) key).startsWith("zookeeper.server")) {
-        logger.debug("Key " + key + " value "
-            + props.getProperty((String) key));
-        servers = servers.concat(props.getProperty((String) key))
-            .concat(",");
-      }
-    }
-    return servers;
-  }
 
   /**
    * Convert a byte array containing a JSON string to a map of key/value
    * pairs.
    * 
-   * @param bytes
-   *            byte array containing the key/value pair strings
+   * @param data
+   *            byte array containing the key/value pair string
    * 
-   * @return a new map instance containing the key/value pairs
+   * @return a new map containing the key/value pairs
    */
-  public static Map<String, String> toMap(byte[] bytes) {
+  public static Map<String, String> toMap(byte[] data) {
 
     reader = mapper.reader(Map.class);
 
-    if (bytes == null || bytes.length == 0) {
-      return Collections.emptyMap();
+    if (data == null || data.length == 0) {
+      return Maps.newHashMap();
     }
     try {
-      return reader.readValue(bytes);
+      return reader.readValue(data);
     } catch (Exception e) {
       String contents;
-      try {
-        contents = new String(bytes, "UTF-8");
-      } catch (UnsupportedEncodingException uue) {
-        contents = "Could not read content due to " + uue;
-      }
+      contents = new String(data, Charsets.UTF_8);
       throw new RuntimeException(
           "Error parsing JSON string: " + contents, e);
     }
@@ -76,25 +53,20 @@ public class Utils {
       return reader.readValue(data);
     } catch (Exception e) {
       String contents;
-      try {
-        contents = new String(data, "UTF-8");
-      } catch (UnsupportedEncodingException uue) {
-        contents = "Could not read content due to " + uue;
-      }
+      contents = new String(data, Charsets.UTF_8);
       throw new RuntimeException(
           "Error parsing JSON string: " + contents, e);
     }
   }
 
-  public static String toJson(Object command) {
+  public static <T> String toJson(T data) {
 
     ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     String json = "";
     try {
-      json = ow.writeValueAsString(command);
+      json = ow.writeValueAsString(data);
     } catch (JsonProcessingException e) {
     }
-
     return json;
   }
 }

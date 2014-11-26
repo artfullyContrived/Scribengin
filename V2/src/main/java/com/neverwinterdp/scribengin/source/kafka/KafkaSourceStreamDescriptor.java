@@ -9,13 +9,11 @@ import com.neverwinterdp.scribengin.util.HostPort;
 public class KafkaSourceStreamDescriptor extends SourceStreamDescriptor {
 
   private String topic;
-
-
   private Collection<HostPort> brokers;
 
-  public KafkaSourceStreamDescriptor(String topic, String partition, Collection<HostPort> brokers) {
+  public KafkaSourceStreamDescriptor(String topic, int partition, Collection<HostPort> brokers) {
     this.topic = topic;
-    this.id = Integer.parseInt(partition);
+    this.id = partition;
     this.brokers = brokers;
   }
 
@@ -31,5 +29,8 @@ public class KafkaSourceStreamDescriptor extends SourceStreamDescriptor {
     this.brokers = brokers;
   }
 
-
+  @Override
+  public String toString() {
+    return "KafkaSourceStreamDescriptor [topic=" + topic + ", brokers=" + brokers + "]";
+  }
 }

@@ -1,16 +1,24 @@
 package com.neverwinterdp.scribengin.util;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import kafka.admin.AdminUtils;
+import kafka.utils.ZKStringSerializer$;
+
+import org.I0Itec.zkclient.ZkClient;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
@@ -19,14 +27,17 @@ import org.apache.zookeeper.data.Stat;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.neverwinterdp.scribengin.source.kafka.TopicNodeListener;
 
 // TODO get the names right
 // TODO tests
-public class ZookeeperUtils {
+public class ZookeeperUtils implements Closeable {
 
   private String zkConnectString;
-  private CuratorFramework zkClient;
   private final static RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+
+  private CuratorFramework zkClient;
+  private PathChildrenCache pathChildrenCache;
 
   private static final Logger logger = Logger
       .getLogger(ZookeeperUtils.class);
@@ -87,11 +98,11 @@ public class ZookeeperUtils {
   /* /brokers/[0...N] --> { "host" : "host:port",
                             "topics" : {"topic1": ["partition1" ... "partitionN"], ...,
                                         "topicN": ["partition1" ... "partitionN"] } }*/
-  public List<String> getBrokersForTopicAndPartition(String topic, int partion)
+  public Collection<HostPort> getBrokersForTopicAndPartition(String topic, int partion)
       throws Exception {
     PartitionState partitionState = getPartionState(topic, partion);
-    StringBuilder broker = new StringBuilder();
-    List<String> brokers = new LinkedList<String>();
+    Collection<HostPort> brokers = new LinkedList<>();
+    HostPort broker;
     byte[] partitions;
     logger.debug("PartitionState " + partitionState);
 
@@ -101,11 +112,8 @@ public class ZookeeperUtils {
       try {
         partitions = zkClient.getData().forPath(brokerInfoLocation + b);
         Broker part = Utils.toClass(partitions, Broker.class);
-        broker.append(part.getHost());
-        broker.append(":");
-        broker.append(part.getPort());
-        brokers.add(broker.toString());
-        broker.setLength(0);
+        broker = new HostPort(part.getHost(), part.getPort());
+        brokers.add(broker);
       } catch (NoNodeException nne) {
         logger.debug(nne.getMessage());
       }
@@ -150,9 +158,9 @@ public class ZookeeperUtils {
     return true;
   }
 
-  // TODO multimap for all topics
-  public Multimap<String, HostPort> getBrokersForTopic(String topic) throws Exception {
-    Multimap<String, HostPort> brokers = HashMultimap.create();
+  public Multimap<Integer, HostPort> getBrokersForTopic(String topic) throws Exception {
+    logger.info("getBrokersForTopic. ");
+    Multimap<Integer, HostPort> brokers = HashMultimap.create();
     Topic topik = getTopicInfo(topic);
     HostPort hostPort;
     for (Entry<String, Set<Integer>> topicPartition : topik.partitions.entrySet()) {
@@ -160,9 +168,10 @@ public class ZookeeperUtils {
         byte[] partitions = zkClient.getData().forPath(brokerInfoLocation + replicaID);
         Broker part = Utils.toClass(partitions, Broker.class);
         hostPort = new HostPort(part.getHost(), part.getPort());
-        brokers.put(topicPartition.getKey(), hostPort);
+        brokers.put(Integer.parseInt(topicPartition.getKey()), hostPort);
       }
     }
+    logger.info("Broker.size " + brokers.size());
     return brokers;
   }
 
@@ -200,8 +209,7 @@ public class ZookeeperUtils {
   private Topic getTopicInfo(String topic)
       throws Exception {
     try {
-      byte[] x = zkClient.getData().forPath(topicInfoLocation + topic);
-      System.out.println("hohoho " + Utils.toMap(x));
+      zkClient.getData().forPath(topicInfoLocation + topic);
     } catch (NoNodeException nne) {
       // there are no nodes for the topic. We return an empty
       // Partitionstate
@@ -258,6 +266,30 @@ public class ZookeeperUtils {
       zkClient.delete().deletingChildrenIfNeeded().forPath("/config");
     } catch (Exception e) {
     }
+  }
+
+  //Listener for node changes
+  public void setTopicNodeListener(TopicNodeListener topicNodeListener) throws Exception {
+    // in this example we will cache data. Notice that this is optional.
+    logger.info("setTopicNodeListener. ");
+    pathChildrenCache =
+        new PathChildrenCache(zkClient, topicInfoLocation + topicNodeListener.getTopic(),
+            true);
+    pathChildrenCache.start(StartMode.BUILD_INITIAL_CACHE);
+
+    pathChildrenCache.getListenable().addListener(topicNodeListener);
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (pathChildrenCache != null)
+      pathChildrenCache.close();
+    zkClient.close();
+  }
+
+  public void addPartitions(String topic, int partitions) {
+    ZkClient client = new ZkClient(zkConnectString, 10000, 10000, ZKStringSerializer$.MODULE$);
+    AdminUtils.addPartitions(client, topic, partitions, "");
   }
 }
 

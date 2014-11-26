@@ -28,6 +28,7 @@ public class KafkaSourceStreamReader implements SourceStreamReader {
   private KafkaSourceStream dataStream;
   private SimpleConsumer consumer;
   private CommitPoint commitPoint;
+
   public CommitPoint getCommitPoint() {
     return commitPoint;
   }
@@ -44,10 +45,10 @@ public class KafkaSourceStreamReader implements SourceStreamReader {
   public KafkaSourceStreamReader(String name, KafkaSourceStream sourceStream) {
     this.name = name;
     this.dataStream = sourceStream;
-    init();
+
   }
 
-  private void init() {
+  public void init() {
     consumer =
         new SimpleConsumer(dataStream.getLeader().getHost(), dataStream.getLeader()
             .getPort(), TIMEOUT, BUFFER_SIZE, getClientName());
@@ -128,7 +129,7 @@ public class KafkaSourceStreamReader implements SourceStreamReader {
 
   @Override
   public CommitPoint commit() throws Exception {
-    // TODO write commit point to registry
+    // TODO write commit point to registry?
     return null;
   }
 
@@ -140,7 +141,6 @@ public class KafkaSourceStreamReader implements SourceStreamReader {
   public void setDataStream(KafkaSourceStream dataStream) {
     this.dataStream = dataStream;
   }
-
 
   @Override
   public SourceStream getDataStream() {

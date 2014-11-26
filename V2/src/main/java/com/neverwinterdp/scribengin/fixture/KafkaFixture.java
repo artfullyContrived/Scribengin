@@ -15,6 +15,7 @@ public class KafkaFixture extends Fixture {
   private int zkPort;
   private String version;
   private int brokerId;
+  private int partitions;
   private static final String PROPERTIES_FILENAME = "/kafka.properties";
   private static final String LOG4J_FILENAME = "/log4j.properties";
   private static final String TEMPLATED_LOG4J_FULLPATH = "servers/%s/resources" + LOG4J_FILENAME;
@@ -32,13 +33,14 @@ public class KafkaFixture extends Fixture {
 
   public KafkaFixture(String version,
       String kafkaHost, int kafkaPort,
-      String zkHost, int zkPort) throws IOException {
+      String zkHost, int zkPort, int partitions) throws IOException {
     super();
     this.host = kafkaHost;
     this.port = kafkaPort;
     this.zkHost = zkHost;
     this.zkPort = zkPort;
     this.version = version;
+    this.partitions=partitions;
     this.brokerId = incAndGetId();
   }
 
@@ -53,7 +55,7 @@ public class KafkaFixture extends Fixture {
     context.put("port", Integer.toString(port));
     context.put("zk_host", zkHost);
     context.put("zk_port", Integer.toString(zkPort));
-    context.put("partitions", Integer.toString(2));
+    context.put("partitions", Integer.toString(partitions));
     context.put("replicas", Integer.toString(1));
     context.put("tmp_dir", tmpDir.getAbsolutePath());
 
