@@ -72,7 +72,7 @@ public class KafkaSourceTest {
     source = new KafkaSource(descriptor);
     int originalSourceStreamCount = source.getSourceStreams().length;
     int newPartitions = 2;
-    servers.getZkUtils().addPartitions(topic, newPartitions + originalSourceStreamCount);
+    servers.getZkUtils().addPartitions(topic, originalSourceStreamCount+newPartitions );
     int newPartitionCount = source.getSourceStreams().length;
     //Do we need to add kafka data here?
 
