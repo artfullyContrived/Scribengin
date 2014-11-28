@@ -246,7 +246,7 @@ public class ZookeeperUtils implements Closeable {
     try {
       zkClient.delete().deletingChildrenIfNeeded().forPath("/brokers");
     } catch (Exception e) {
-     logger.error(e.getMessage(), e);
+      logger.error(e.getMessage(), e);
     }
     logger.info("deleted brokers");
     try {
@@ -273,11 +273,11 @@ public class ZookeeperUtils implements Closeable {
     // in this example we will cache data. Notice that this is optional.
     logger.info("setTopicNodeListener. ");
     pathChildrenCache =
-        new PathChildrenCache(zkClient, topicInfoLocation + topicNodeListener.getTopic(),
+        new PathChildrenCache(zkClient, topicInfoLocation.substring(0,
+            topicInfoLocation.length() - 1),
             true);
-    pathChildrenCache.start(StartMode.BUILD_INITIAL_CACHE);
-
     pathChildrenCache.getListenable().addListener(topicNodeListener);
+    pathChildrenCache.start(StartMode.BUILD_INITIAL_CACHE);
   }
 
   @Override

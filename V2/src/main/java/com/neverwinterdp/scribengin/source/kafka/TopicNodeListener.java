@@ -7,7 +7,7 @@ import org.apache.log4j.Logger;
 
 public abstract class TopicNodeListener implements PathChildrenCacheListener {
 
-  private static final Logger logger = Logger.getLogger(TopicNodeListener.class);
+  protected static final Logger logger = Logger.getLogger(TopicNodeListener.class);
 
   @Override
   public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
@@ -17,5 +17,5 @@ public abstract class TopicNodeListener implements PathChildrenCacheListener {
 
   public abstract void update();
 
-  public abstract String getTopic() ;
+  public abstract String getTopic();
 }
