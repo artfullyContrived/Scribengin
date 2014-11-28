@@ -246,7 +246,7 @@ public class ZookeeperUtils implements Closeable {
     try {
       zkClient.delete().deletingChildrenIfNeeded().forPath("/brokers");
     } catch (Exception e) {
-      e.printStackTrace();
+     logger.error(e.getMessage(), e);
     }
     logger.info("deleted brokers");
     try {
