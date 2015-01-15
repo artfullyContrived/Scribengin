@@ -33,15 +33,6 @@ repositories {
   mavenCentral()
 }
 
-configurations.all {
-  exclude(group: 'ring', name: 'ring-core', version: '0.3.11')
-  exclude(group: 'storm', name: 'storm', version: '0.8.1')
-
-  resolutionStrategy {
-    force 'com.google.guava:guava:13.0'
-  }
-}
-
 dependencies {
   compile group: 'com.neverwinterdp', name: 'queuengin', version: '1.0-SNAPSHOT'
   compile group: 'com.neverwinterdp', name: 'commons.utils', version: '1.0-SNAPSHOT'
@@ -51,7 +42,7 @@ dependencies {
   compile 'org.json:json:20090211'
   //compile group: 'com.google.guava', name: 'guava', version: '18.0'
   compile group: 'com.google.guava', name: 'guava', version: '13.0'
-
+  compile 'org.apache.curator:curator-recipes:2.6.0'
   compile group: 'junit', name: 'junit', version: '4.11'
   //testCompile group: 'junit', name: 'junit', version: '4.11'
 }
